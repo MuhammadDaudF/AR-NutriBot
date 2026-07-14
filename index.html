@@ -536,11 +536,6 @@
     background: transparent;
   }
   #ar-root a-scene { background: transparent; }
-  
-  /* Mirror camera and AR canvas */
-  video, canvas.a-canvas {
-    transform: scaleX(-1) !important;
-  }
 
   /* Loading Overlay */
   #loading-screen {
@@ -1114,21 +1109,21 @@ const FOODS = [
     color: '#3B82F6'
   },
   {
-    id: 4, key: 'sayur', name: 'Sayur', icon: '🥦', title: 'Sayur',
+    id: 3, key: 'sayur', name: 'Sayur', icon: '🥦', title: 'Sayur',
     desc: 'Sayur hijau segar ini banyak mengandung vitamin dan serat. Serat sangat baik untuk melancarkan pencernaan dan menjaga daya tahan tubuhmu dari serangan kuman penyakit.',
     qr: 'assets/qr/4-sayur.png',
     thumb: 'assets/qr/4-sayur-thumb.png',
     color: '#22C55E'
   },
   {
-    id: 5, key: 'buah', name: 'Buah', icon: '🍎', title: 'Buah',
+    id: 4, key: 'buah', name: 'Buah', icon: '🍎', title: 'Buah',
     desc: 'Buah-buahan segar mengandung vitamin C yang tinggi. Vitamin C berguna untuk menjaga imunitas tubuhmu tetap kuat, serta membuat kulit dan gigimu sehat!',
     qr: 'assets/qr/5-buah.png',
     thumb: 'assets/qr/5-buah-thumb.jpg',
     color: '#EC4899'
   },
   {
-    id: 6, key: 'air', name: 'Air Putih', icon: '💧', title: 'Air Putih',
+    id: 5, key: 'air', name: 'Air Putih', icon: '💧', title: 'Air Putih',
     desc: 'Air putih dingin ini membantu menyegarkan tubuh dan menjaga konsentrasi belajarmu. Jadi, biasakan minum air putih yang cukup setiap hari, ya!',
     qr: 'assets/qr/6-air.png',
     thumb: 'assets/qr/6-air-thumb.jpg',
@@ -1384,11 +1379,10 @@ function characterEntity(offsetX) {
 }
 
 function foodLabel(name, x) {
-  // We use scaleX(-0.7) to flip the text horizontally because the entire AR canvas is mirrored
-  return `<a-text value="${name.toUpperCase()}" align="center" position="${x} 0.56 0" scale="-0.7 0.7 0.7" color="#FFFFFF" side="double" width="2" 
+  return `<a-text value="${name.toUpperCase()}" align="center" position="${x} 0.56 0" scale="0.7 0.7 0.7" color="#FFFFFF" side="double" width="2" 
     animation="property: position; dir: alternate; dur: 2800; loop: true; to: ${x} 0.60 0; easing: easeInOutSine">
   </a-text>
-  <a-text value="${name.toUpperCase()}" align="center" position="${x} 0.555 -0.005" scale="-0.72 0.72 0.72" color="#0B3D35" side="double" width="2" opacity="0.5" transparent="true">
+  <a-text value="${name.toUpperCase()}" align="center" position="${x} 0.555 -0.005" scale="0.72 0.72 0.72" color="#0B3D35" side="double" width="2" opacity="0.5" transparent="true">
   </a-text>`;
 }
 
@@ -1415,6 +1409,17 @@ function buildScene() {
   guardianAsset.src = 'assets/character/nutri-guardian-reference.png';
   guardianAsset.setAttribute('crossorigin', 'anonymous');
   assets.appendChild(guardianAsset);
+
+  // Preload external 3D models if defined in FOODS
+  FOODS.forEach(f => {
+    if (f.model) {
+      const modelAsset = document.createElement('a-asset-item');
+      modelAsset.id = `model-${f.key}`;
+      modelAsset.setAttribute('src', f.model);
+      assets.appendChild(modelAsset);
+    }
+  });
+
   scene.appendChild(assets);
 
   /* Camera */
@@ -1455,7 +1460,15 @@ function buildScene() {
     const foodGroup = document.createElement('a-entity');
     foodGroup.setAttribute('position', '0 0 0');
     foodGroup.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear');
-    foodGroup.innerHTML = foodGeometry(f.key);
+    
+    if (f.model) {
+      // Use external 3D model (.glb)
+      foodGroup.innerHTML = `<a-gltf-model src="#model-${f.key}" scale="1 1 1" position="0 0 0"></a-gltf-model>`;
+    } else {
+      // Fallback to code primitives
+      foodGroup.innerHTML = foodGeometry(f.key);
+    }
+    
     wrapper.appendChild(foodGroup);
 
     /* Food label (centered at 0) */
